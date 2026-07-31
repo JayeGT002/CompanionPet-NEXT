@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>气泡</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  /*
+   * 尺寸链（scale=1 时，窗口 340×90，由 App.tsx 通过 setSize 设定）：
+   *   body padding        : 6px 10px 10px 10px  → 内容区 320×74
+   *   bubble-body padding : 7px 14px             → 文字区 272×60
+   *   bubble-text         : max-width 268px, line-height 1.45, line-clamp 3
+   *     3 行 × 12px × 1.45 ≈ 52.2px ≤ 60px ✓ 不会被截断
+   *   箭头 ::after        : 位于 bubble-body 底部中点 = 窗口水平中心
+   *
+   * 缩放与动画分离：scale 在 #bubble(父)，入场动画在 .bubble-content(子)，
+   * 避免两者都用 transform 互相覆盖。
+   */
+  html,body{width:100%;height:100%;overflow:visible;background:transparent!important;
+    font-family:-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif;display:flex;
+    align-items:flex-end;justify-content:center;padding:6px 10px 10px 10px}
+  #bubble.bubble-body{position:relative;background:rgba(255,255,255,0.96);
+    backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+    border-radius:14px;padding:7px 14px;display:inline-block;max-width:300px;
+    box-shadow:0 2px 16px rgba(0,0,0,0.12),0 0 1px rgba(0,0,0,0.08);
+    word-break:break-word;
+    /* scale 由 App.tsx 通过 --bubble-scale 设定 */
+    transform:scale(var(--bubble-scale,1));transform-origin:bottom center}
+  #bubble.bubble-body::after{content:'';position:absolute;bottom:-8px;left:50%;
+    transform:translateX(-50%);width:0;height:0;
+    border-left:8px solid transparent;border-right:8px solid transparent;
+    border-top:8px solid rgba(255,255,255,0.96)}
+  .bubble-content--in{animation:in .3s ease}
+  .bubble-text{font-size:12px;line-height:1.45;color:#1a1a1a;text-align:center;
+    max-width:268px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;
+    line-clamp:3;-webkit-box-orient:vertical}
+  @keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+<div id="bubble" class="bubble-body"><div class="bubble-content"><div id="text" class="bubble-text"></div></div></div>
+<script>
+  // 气泡窗口的内容由 pet 窗口通过 eval_in_window 命令注入；
+  // 显示/隐藏、定时关闭、定位都由 pet 窗口控制，这里只负责渲染。
+  document.body.addEventListener('click', (e) => { e.stopPropagation() })
+</script>
+</body>
+</html>
