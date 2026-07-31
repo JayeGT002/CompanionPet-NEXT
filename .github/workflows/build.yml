@@ -49,6 +49,10 @@ jobs:
 
       - name: Build Tauri app
         run: npm run tauri build -- --target ${{ matrix.target }}
+        env:
+          # CI 环境默认会传 --skip-jenkins 跳过 DMG 的 AppleScript 布局，
+          # 导致 DMG 无图标位置。置此变量让布局照常执行（生成 .DS_Store）。
+          TAURI_BUNDLER_DMG_IGNORE_CI: "true"
 
       - name: Upload macOS installers
         if: matrix.platform == 'macos-14'

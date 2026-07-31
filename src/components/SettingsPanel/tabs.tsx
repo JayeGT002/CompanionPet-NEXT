@@ -254,12 +254,6 @@ export function SoulTab({ config, updateConfig }: TabProps) {
           </>
         ) : null}
       </SettingGroup>
-
-      <SettingGroup title="兜底文案">
-        <div className="cp-hint" style={{ padding: '4px 14px' }}>
-          当一言 / LLM 不可用时，从内置兜底文案中随机选取。点击与待机共用同一套文案（来自 兜底文案.txt，不可自定义）。
-        </div>
-      </SettingGroup>
     </div>
   )
 }

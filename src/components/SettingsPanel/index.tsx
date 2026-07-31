@@ -85,7 +85,7 @@ export default function SettingsPanel({ visible, onClose, embedded }: SettingsPa
           title="关闭"
           onClick={(e) => { e.stopPropagation(); onClose() }}
         />
-        <span className="cp-titlebar__title">伴星 设置</span>
+        <span className="cp-titlebar__title">设置</span>
       </div>
 
       {/* Main: sidebar + content */}
