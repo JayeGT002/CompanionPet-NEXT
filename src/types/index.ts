@@ -25,9 +25,6 @@ export interface PetConfig {
   llmEndpoint: string
   llmApiKey: string
   llmModel: string
-  /** 本地兜底发言 */
-  clickSpeeches: string[]
-  idleSpeeches: string[]
   /** 开机自动启动 */
   autoStartEnabled: boolean
   /** Dock 栏隐藏图标（macOS） */

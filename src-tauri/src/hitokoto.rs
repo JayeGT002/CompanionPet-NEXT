@@ -6,28 +6,22 @@ struct HitokotoResponse {
     hitokoto: Option<String>,
 }
 
-const FALLBACK_QUOTES: &[&str] = &[
-    "今天也是元气满满的一天呢~",
-    "主人辛苦了，休息一下吧",
-    "别忘了喝水哦",
-    "生活不止眼前的代码，还有远方的美食",
-    "晚安，愿你好梦",
-    "加油，你是最棒的！",
-    "窗外天气不错，要不要出去走走？",
-    "一个人也要好好吃饭呀",
-    "今天的努力，是明天的伏笔",
-    "做自己喜欢的事，就是最大的幸福",
-    "你若盛开，蝴蝶自来",
-    "保持热爱，奔赴山海",
-    "星光不问赶路人",
-    "慢慢来，比较快",
-    "心有猛虎，细嗅蔷薇",
-];
+/// 兜底文案（来自 兜底文案.txt，编译期嵌入）
+const FALLBACK_TEXT: &str = include_str!("../../兜底文案.txt");
 
+/// 从兜底文案中随机取一条
 fn random_fallback() -> String {
+    let lines: Vec<&str> = FALLBACK_TEXT
+        .lines()
+        .map(|l| l.trim())
+        .filter(|l| !l.is_empty())
+        .collect();
+    if lines.is_empty() {
+        return "今天也是元气满满的一天呢~".to_string();
+    }
     let mut rng = rand::thread_rng();
-    let idx = rng.gen_range(0..FALLBACK_QUOTES.len());
-    FALLBACK_QUOTES[idx].to_string()
+    let idx = rng.gen_range(0..lines.len());
+    lines[idx].to_string()
 }
 
 /// 从一言 API 获取随机语句（公开，供 command 调用）

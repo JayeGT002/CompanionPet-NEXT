@@ -3,7 +3,6 @@
  * 逻辑与原 buildPetSettings/buildGeneral/buildSoul/buildPlugins/buildAbout 一一对应
  */
 
-import { useState } from 'react'
 import type { PetConfig, PetInfo } from '../../types'
 import { importPetImage, validateImageFile } from '../../services/imageApi'
 import { applyAutoStart, setDockVisible } from '../../services/tauriApi'
@@ -15,7 +14,6 @@ import {
   Slider,
   TextField,
   SelectField,
-  SpeechTextarea,
 } from './controls'
 import { PetGrid } from './PetGrid'
 
@@ -165,44 +163,14 @@ export function GeneralTab({ config, updateConfig }: TabProps) {
 /* ===================== 灵魂设置 ===================== */
 
 export function SoulTab({ config, updateConfig }: TabProps) {
-  const [generating, setGenerating] = useState(false)
-
-  const handleLlmGenerate = async () => {
-    const ep = config.llmEndpoint
-    const key = config.llmApiKey
-    const model = config.llmModel
-    if (!ep || !key) { alert('请先在下方 LLM 设置中配置 API 地址和密钥'); return }
-    setGenerating(true)
-    try {
-      let lines: string[] = []
-      const isTauriEnv = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window
-      if (isTauriEnv) {
-        const { invoke } = await import('@tauri-apps/api/core')
-        lines = await invoke<string[]>('generate_llm_speeches', { endpoint: ep, apiKey: key, model })
-      } else {
-        const res = await fetch(ep, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-          body: JSON.stringify({
-            model,
-            messages: [{ role: 'user', content: '你是一个桌面宠物的台词生成器。请生成10条简短的中文日常对话台词，每行一条，语气温柔可爱。直接输出台词，不要编号和解释。' }],
-            max_tokens: 500,
-            temperature: 0.9,
-          }),
-        })
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        const data = await res.json()
-        const content: string = data.choices?.[0]?.message?.content || ''
-        lines = content.split('\n').map((l: string) => l.trim()).filter((l: string) => l.length > 0 && l.length < 60)
-      }
-      if (lines.length > 0) {
-        updateConfig('clickSpeeches', [...config.clickSpeeches, ...lines])
-        updateConfig('idleSpeeches', [...config.idleSpeeches, ...lines])
-      }
-    } catch (err: any) {
-      alert('LLM 请求失败: ' + (err.message || '未知错误'))
-    }
-    setGenerating(false)
+  // 一言与 LLM 互斥：开启一方时关闭另一方（二者只能二选一）
+  const toggleHitokoto = (v: boolean) => {
+    updateConfig('hitokotoEnabled', v)
+    if (v) updateConfig('llmEnabled', false)
+  }
+  const toggleLlm = (v: boolean) => {
+    updateConfig('llmEnabled', v)
+    if (v) updateConfig('hitokotoEnabled', false)
   }
 
   return (
@@ -224,7 +192,7 @@ export function SoulTab({ config, updateConfig }: TabProps) {
         <SettingRow label="启用一言">
           <Switch
             checked={config.hitokotoEnabled}
-            onChange={(v) => updateConfig('hitokotoEnabled', v)}
+            onChange={toggleHitokoto}
           />
         </SettingRow>
         {config.hitokotoEnabled ? (
@@ -235,46 +203,25 @@ export function SoulTab({ config, updateConfig }: TabProps) {
               onChange={(v) => updateConfig('hitokotoCategory', v)}
             />
           </SettingStack>
-        ) : null}
+        ) : (
+          <div className="cp-hint" style={{ padding: '0 14px 4px' }}>
+            一言与下方「LLM 文案」互斥，同一时间只能开启其一。
+          </div>
+        )}
       </SettingGroup>
 
-      <div className="cp-section-title">本地兜底发言</div>
-      <div className="cp-hint" style={{ padding: '0 4px 8px' }}>
-        当一言 / LLM 不可用时，随机从以下列表中选择发言
-      </div>
-      <SettingGroup>
-        <SettingStack label="点击发言">
-          <SpeechTextarea
-            items={config.clickSpeeches}
-            onUpdate={(v) => updateConfig('clickSpeeches', v)}
-          />
-        </SettingStack>
-        <SettingStack label="待机发言">
-          <SpeechTextarea
-            items={config.idleSpeeches}
-            onUpdate={(v) => updateConfig('idleSpeeches', v)}
-          />
-        </SettingStack>
-        <div style={{ padding: '4px 14px 12px' }}>
-          <button
-            className="cp-btn cp-btn-p"
-            disabled={generating}
-            onClick={handleLlmGenerate}
-          >
-            {generating ? '生成中…' : 'LLM 随机生成发言'}
-          </button>
-        </div>
-      </SettingGroup>
-
-      <SettingGroup title="LLM">
-        <SettingRow label="启用 LLM">
+      <SettingGroup title="LLM 文案">
+        <SettingRow label="启用 LLM 文案">
           <Switch
             checked={config.llmEnabled}
-            onChange={(v) => updateConfig('llmEnabled', v)}
+            onChange={toggleLlm}
           />
         </SettingRow>
         {config.llmEnabled ? (
           <>
+            <div className="cp-hint" style={{ padding: '0 14px 4px' }}>
+              启用后按内置提示词一次生成 60 条文案用于发言，与一言互斥。生成期间气泡提示「正在胡编乱造中……」，完成提示「胡编乱造完成！」。
+            </div>
             <SettingStack label="LLM 名称">
               <TextField
                 placeholder="DeepSeek / OpenAI / 自定义..."
@@ -306,6 +253,12 @@ export function SoulTab({ config, updateConfig }: TabProps) {
             </SettingStack>
           </>
         ) : null}
+      </SettingGroup>
+
+      <SettingGroup title="兜底文案">
+        <div className="cp-hint" style={{ padding: '4px 14px' }}>
+          当一言 / LLM 不可用时，从内置兜底文案中随机选取。点击与待机共用同一套文案（来自 兜底文案.txt，不可自定义）。
+        </div>
       </SettingGroup>
     </div>
   )

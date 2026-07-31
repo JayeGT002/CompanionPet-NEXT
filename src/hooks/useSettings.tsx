@@ -28,8 +28,6 @@ export const DEFAULT_PET_CONFIG: PetConfig = {
   llmEndpoint: 'https://api.deepseek.com/chat/completions',
   llmApiKey: '',
   llmModel: 'deepseek-chat',
-  clickSpeeches: ['戳我干嘛~', '你好呀！', '有什么需要帮忙的吗？'],
-  idleSpeeches: ['今天天气真好~', '好安静啊...', '主人还在吗？'],
   autoStartEnabled: false,
   hideDockIcon: false,
 }

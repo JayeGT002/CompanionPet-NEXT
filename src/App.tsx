@@ -11,7 +11,7 @@
 import { useCallback, useEffect, useRef } from 'react'
 import PetDisplay from './components/PetDisplay'
 import SettingsPanel from './components/SettingsPanel'
-import { useHitokoto } from './hooks/useHitokoto'
+import { useSpeech } from './hooks/useSpeech'
 import { useSettings } from './hooks/useSettings'
 import { savePetPosition } from './services/tauriApi'
 import './App.css'
@@ -260,27 +260,34 @@ export default function App() {
   // 窗口尺寸 = (128 + 2*floatAmplitude) * scale，图像居中 → 上下各 floatAmplitude*scale padding
   const imageOffsetY = config.animationEnabled ? config.floatAmplitude * config.scale : 0
 
-  // 一言 / 本地发言调度
-  useHitokoto({
+  // 发言调度：一言 / LLM / 本地兜底（LLM 与一言互斥）
+  const { getSpeechNow } = useSpeech({
     enabled: config.autoSpeakEnabled,
     hitokotoEnabled: config.hitokotoEnabled,
+    llmEnabled: config.llmEnabled,
     interval: config.speakInterval,
-    fallbackSpeeches: config.idleSpeeches,
+    llmEndpoint: config.llmEndpoint,
+    llmApiKey: config.llmApiKey,
+    llmModel: config.llmModel,
     onSpeak: (text) => {
       log('主动发言:', text.slice(0, 30))
       showBubbleWindow(text, config.scale, 6, imageOffsetY)
     },
+    onStatus: (text, duration) => {
+      log('状态气泡:', text)
+      showBubbleWindow(text, config.scale, duration, imageOffsetY)
+    },
   })
 
   // 点击宠物 — 用 onClick（拖拽中 dragMoved=true 时跳过）
-  const handlePetClick = useCallback(() => {
+  // 点击与待机共用同一套文本（LLM 池 / 兜底文案）
+  const handlePetClick = useCallback(async () => {
     if (dragMoved.current) return // 这是一次拖拽，不是点击
-    const speeches = config.clickSpeeches.length > 0 ? config.clickSpeeches : ['你好！']
-    const text = speeches[Math.floor(Math.random() * speeches.length)]
+    const text = await getSpeechNow()
     log('点击宠物:', text.slice(0, 30))
     hideBubbleWindow()
     showBubbleWindow(text, config.scale, 4, imageOffsetY)
-  }, [config.clickSpeeches, config.scale, imageOffsetY])
+  }, [getSpeechNow, config.scale, imageOffsetY])
 
   // 暴露给托盘菜单（同时容错：托盘也可直接通过 Rust 端打开 settings 窗口）
   useEffect(() => {
