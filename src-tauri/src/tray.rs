@@ -21,10 +21,19 @@ pub fn create_tray<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
 
     let mut builder = TrayIconBuilder::new().menu(&menu);
 
-    if let Some(icon) = app.default_window_icon() {
-        builder = builder.icon(icon.clone());
-    } else {
-        error!("未找到应用托盘图标，将继续创建托盘（无图标）");
+    // 托盘图标使用专用 menubar-icon.png（彩色图标，非 template 模式）
+    match tauri::image::Image::from_bytes(include_bytes!(
+        "../../public/images/icons/menubar-icon.png"
+    )) {
+        Ok(icon) => builder = builder.icon(icon),
+        Err(e) => {
+            error!("加载托盘图标 menubar-icon.png 失败: {}, 回退到应用图标", e);
+            if let Some(icon) = app.default_window_icon() {
+                builder = builder.icon(icon.clone());
+            } else {
+                error!("未找到应用托盘图标，将继续创建托盘（无图标）");
+            }
+        }
     }
 
     let _tray = builder
