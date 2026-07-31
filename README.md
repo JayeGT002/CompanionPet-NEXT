@@ -83,4 +83,5 @@ npm run tauri build
 本项目中的美术资源（包括但不限于角色立绘、图标、表情等）均收集自互联网，**版权归原作者所有**。
 - public/images/pets 目录下资源来自《洛克王国：世界》创作者资源库，版权归属腾讯公司以及魔方工作室。
 - public/images/icons 目录下资源来自阿里巴巴矢量图标库，版权归属原作者。
+
 若您是相关资源的版权所有者且不希望本项目中使用您的作品，请通过 [Issue](https://github.com/JayeGT002/CompanionPet-NEXT/issues) 联系我们，我们将立即移除。
